@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class GameplayScreen extends StatefulWidget {
+  final String roomID;
+  final bool isNewRoom;
+
+  GameplayScreen({required this.roomID, required this.isNewRoom});
+
   @override
   _GameplayScreenState createState() => _GameplayScreenState();
 }
@@ -9,8 +14,15 @@ class GameplayScreen extends StatefulWidget {
 class _GameplayScreenState extends State<GameplayScreen> {
   List<String> board = List.filled(9, '');
   String currentPlayer = 'X';
-  int xScore = 0;
-  int oScore = 0;
+  DatabaseReference roomRef = FirebaseDatabase.instance.ref();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isNewRoom) {
+      createNewRoom(widget.roomID);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,15 +30,17 @@ class _GameplayScreenState extends State<GameplayScreen> {
       appBar: AppBar(title: Text('Tic Tac Toe - Gameplay')),
       body: Center(
         child: SingleChildScrollView(
-          // Add this SingleChildScrollView widget
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              buildScoreBoard(),
+              SizedBox(height: 20),
+              Text(
+                'Room ID: ${widget.roomID}',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
               SizedBox(height: 20),
               buildBoard(),
               SizedBox(height: 20),
-              buildResetButton(),
             ],
           ),
         ),
@@ -35,32 +49,71 @@ class _GameplayScreenState extends State<GameplayScreen> {
   }
 
   Widget buildBoard() {
-    return AspectRatio(
-      aspectRatio: 1,
-      child: Container(
-        padding: EdgeInsets.all(10),
-        child: GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            childAspectRatio: 1,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-          ),
-          itemBuilder: (context, index) => buildCell(index),
-          itemCount: board.length,
-        ),
-      ),
+    return StreamBuilder<DataSnapshot>(
+      stream: gameRoomStream,
+      builder: (context, snapshot) {
+        Map<dynamic, dynamic>? data;
+
+        if (snapshot.hasData && snapshot.data!.value != null) {
+          data = snapshot.data!.value as Map<dynamic, dynamic>;
+          List<String> board =
+              List<String>.from(data['board'].map((value) => value ?? ''));
+          String? winner = calculateWinner(board);
+
+          if (winner != null) {
+            // Update the Realtime Database with winner information
+            DatabaseReference roomRef = FirebaseDatabase.instance
+                .ref()
+                .child('rooms')
+                .child(widget.roomID);
+            roomRef.update({
+              'winner': winner,
+              'currentPlayer': '',
+            });
+          }
+
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (winner == null)
+                AspectRatio(
+                  aspectRatio: 1,
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    child: GridView.builder(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        childAspectRatio: 1,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                      ),
+                      itemBuilder: (context, index) => buildCell(index, board),
+                      itemCount: board.length,
+                    ),
+                  ),
+                )
+              else
+                Text(
+                  winner == 'Tie' ? 'It\'s a tie!' : '$winner wins!',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+            ],
+          );
+        } else {
+          return const CircularProgressIndicator();
+        }
+      },
     );
   }
 
-  Widget buildCell(int index) {
+  Widget buildCell(int index, List<String> board) {
     return GestureDetector(
-      onTap: () => onCellTap(index),
+      onTap: () => _markSquare(index),
       child: Container(
         color: Colors.blue,
         child: Center(
           child: Text(
-            board[index],
+            board[index] == '5' ? '' : board[index],
             style: TextStyle(fontSize: 24, color: Colors.white),
           ),
         ),
@@ -68,110 +121,116 @@ class _GameplayScreenState extends State<GameplayScreen> {
     );
   }
 
-  Widget buildResetButton() {
-    return ElevatedButton(
-      onPressed: () => resetBoard(),
-      child: Text('Reset Board'),
-    );
+  Stream<DataSnapshot> get gameRoomStream {
+    return FirebaseDatabase.instance
+        .ref()
+        .child('rooms')
+        .child(widget.roomID)
+        .onValue
+        .map((event) => event.snapshot);
   }
 
-  onCellTap(int index) {
-    if (board[index] == '') {
-      setState(() {
-        board[index] = currentPlayer;
-        currentPlayer = currentPlayer == 'X' ? 'O' : 'X';
-      });
+  Future<void> _markSquare(int index) async {
+    DatabaseReference roomRef =
+        FirebaseDatabase.instance.ref().child('rooms').child(widget.roomID);
 
-      if (checkWinner()) {
-        if (currentPlayer == 'X') {
-          oScore++;
+    roomRef.once().then((event) {
+      DataSnapshot roomSnapshot = event.snapshot;
+
+      Map<dynamic, dynamic> roomData =
+          roomSnapshot.value as Map<dynamic, dynamic>;
+
+      List<String> board = List<String>.from(roomData['board'].cast<String>());
+      if (board[index] == '5') {
+        board[index] = roomData['currentPlayer'];
+        String newCurrentPlayer = roomData['currentPlayer'] == 'X' ? 'O' : 'X';
+
+        // Check for a win
+        bool hasWinner = checkForWinner(board);
+        if (hasWinner) {
+          // Update the Realtime Database with winner information
+          roomRef.update({
+            'board': board,
+            'currentPlayer': '',
+            'winner': currentPlayer,
+          });
         } else {
-          xScore++;
+          // Update the Realtime Database
+          roomRef.update({
+            'board': board,
+            'currentPlayer': newCurrentPlayer,
+          });
         }
-        saveScores();
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text("Winner"),
-              content: Text("Player ${currentPlayer == 'X' ? 'O' : 'X'} won!"),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    resetBoard();
-                    Navigator.pop(context);
-                  },
-                  child: Text("OK"),
-                )
-              ],
-            );
-          },
-        );
       }
-    }
+    });
   }
 
-  bool checkWinner() {
-    // Horizontal and vertical checks
-    for (int i = 0; i < 3; i++) {
-      if ((board[i * 3] == board[i * 3 + 1]) &&
-          (board[i * 3 + 1] == board[i * 3 + 2]) &&
-          (board[i * 3] != '')) {
-        return true;
+  String? calculateWinner(List<String> board) {
+    List<List<int>> winningCombinations = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6]
+    ];
+
+    for (List<int> combination in winningCombinations) {
+      String firstValue = board[combination[0]];
+      if (firstValue != '5' &&
+          board[combination[1]] == firstValue &&
+          board[combination[2]] == firstValue) {
+        return firstValue;
       }
-      if ((board[i] == board[i + 3]) &&
-          (board[i + 3] == board[i + 6]) &&
-          (board[i] != '')) {
+    }
+
+    if (!board.contains('5')) {
+      return 'Tie';
+    }
+
+    return null;
+  }
+
+  bool checkForWinner(List<String> board) {
+    // Check rows
+    for (int i = 0; i <= 6; i += 3) {
+      if (board[i] != '5' &&
+          board[i] == board[i + 1] &&
+          board[i + 1] == board[i + 2]) {
         return true;
       }
     }
 
-    // Diagonal checks
-    if ((board[0] == board[4]) && (board[4] == board[8]) && (board[0] != '')) {
+    // Check columns
+    for (int i = 0; i <= 2; i++) {
+      if (board[i] != '5' &&
+          board[i] == board[i + 3] &&
+          board[i + 3] == board[i + 6]) {
+        return true;
+      }
+    }
+
+    // Check diagonals
+    if (board[0] != '5' && board[0] == board[4] && board[4] == board[8]) {
       return true;
     }
-    if ((board[2] == board[4]) && (board[4] == board[6]) && (board[2] != '')) {
+    if (board[2] != '5' && board[2] == board[4] && board[4] == board[6]) {
       return true;
     }
 
+    // No winner found
     return false;
   }
 
-  void resetBoard() {
-    setState(() {
-      board = List.filled(9, '');
+  Future<void> createNewRoom(String roomID) async {
+    DatabaseReference roomRef =
+        FirebaseDatabase.instance.ref().child('rooms').child(roomID);
+
+    await roomRef.set({
+      'currentPlayer': 'X',
+      'board': List.filled(9, '5'),
     });
-  }
-
-  Widget buildScoreBoard() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text('X: $xScore', style: TextStyle(fontSize: 20)),
-        SizedBox(width: 20),
-        Text('O: $oScore', style: TextStyle(fontSize: 20)),
-      ],
-    );
-  }
-
-  Future<void> saveScores() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('xScore', xScore);
-    await prefs.setInt('oScore', oScore);
-  }
-
-  Future<void> loadScores() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      xScore = prefs.getInt('playerXScore') ?? 0;
-      oScore = prefs.getInt('playerOScore') ?? 0;
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    resetBoard();
-    loadScores();
   }
 }

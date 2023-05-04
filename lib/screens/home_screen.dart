@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'game_room_selection_screen.dart';
 
 class HomeScreen extends StatelessWidget {
+  void _navigateToGameRoomSelection(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => GameRoomSelectionScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -11,8 +19,8 @@ class HomeScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton(
-              onPressed: () => onStartGame(context),
-              child: Text('Start'),
+              onPressed: () => _navigateToGameRoomSelection(context),
+              child: Text('Start Game'),
             ),
             SizedBox(height: 20),
             ElevatedButton(

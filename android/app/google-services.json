@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "778695777347",
+    "firebase_url": "https://real-time-data-331a1-default-rtdb.firebaseio.com",
+    "project_id": "real-time-data-331a1",
+    "storage_bucket": "real-time-data-331a1.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:778695777347:android:9b2602c4943ccdef0d88f6",
+        "android_client_info": {
+          "package_name": "com.example.codi"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "778695777347-2np4k0201hgabtau54lu8k1020s31thq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_VlAf6hHolUtFxUs6mx6mxXrh-eXVCus"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "778695777347-2np4k0201hgabtau54lu8k1020s31thq.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "778695777347-1cnkgdgtkr3tg1un43jn4hkad9pukieb.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.codi"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

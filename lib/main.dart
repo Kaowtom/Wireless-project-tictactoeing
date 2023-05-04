@@ -4,10 +4,17 @@ import 'screens/gameplay_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/how_to_play_screen.dart';
 import 'screens/setting_screen.dart';
+import 'screens/game_room_selection_screen.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'firebase_options.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(TicTacToeApp());
 }
 
@@ -32,11 +39,12 @@ class _TicTacToeAppState extends State<TicTacToeApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Tic Tac Toe',
       theme: isDarkMode ? darkTheme : lightTheme,
       home: HomeScreen(),
       routes: {
-        '/gameplay': (context) => GameplayScreen(),
+        '/game-room-selection': (context) => GameRoomSelectionScreen(),
         '/history': (context) => HistoryScreen(),
         '/how-to-play': (context) => HowToPlayScreen(),
         '/settings': (context) => SettingsScreen(),
