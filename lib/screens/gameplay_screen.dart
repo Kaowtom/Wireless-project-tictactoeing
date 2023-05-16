@@ -110,11 +110,11 @@ class _GameplayScreenState extends State<GameplayScreen> {
     return GestureDetector(
       onTap: () => _markSquare(index),
       child: Container(
-        color: Colors.blue,
+        color: Color.fromARGB(255, 192, 192, 192),
         child: Center(
           child: Text(
             board[index] == '5' ? '' : board[index],
-            style: TextStyle(fontSize: 24, color: Colors.white),
+            style: TextStyle(fontSize: 30, color: Colors.white),
           ),
         ),
       ),

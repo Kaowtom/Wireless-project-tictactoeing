@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
+  final Function(bool) toggleTheme;
+
+  SettingsScreen({required this.toggleTheme});
+
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
 }
@@ -12,43 +15,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Tic Tac Toe - Settings')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Background Color', style: TextStyle(fontSize: 24)),
-            SizedBox(height: 20),
-            Switch(
+      appBar: AppBar(
+        title: Text('Settings'),
+      ),
+      body: ListView(
+        children: [
+          ListTile(
+            title: Text('Dark Mode'),
+            trailing: Switch(
               value: isDarkMode,
               onChanged: (value) {
                 setState(() {
                   isDarkMode = value;
-                  saveDarkMode();
                 });
+                widget.toggleTheme(value);
               },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
-  }
-
-  Future<void> saveDarkMode() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isDarkMode', isDarkMode);
-  }
-
-  Future<void> loadDarkMode() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      isDarkMode = prefs.getBool('isDarkMode') ?? false;
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    loadDarkMode();
   }
 }

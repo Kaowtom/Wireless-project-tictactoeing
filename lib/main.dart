@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
-import 'screens/gameplay_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/how_to_play_screen.dart';
 import 'screens/setting_screen.dart';
@@ -12,7 +11,7 @@ import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
+  Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   runApp(TicTacToeApp());
@@ -25,13 +24,13 @@ class TicTacToeApp extends StatefulWidget {
 
 class _TicTacToeAppState extends State<TicTacToeApp> {
   ThemeData lightTheme = ThemeData(
-    primarySwatch: Colors.blue,
+    primarySwatch: Colors.brown,
     scaffoldBackgroundColor: Colors.white,
   );
 
   ThemeData darkTheme = ThemeData(
-    primarySwatch: Colors.blue,
-    scaffoldBackgroundColor: Color.fromARGB(255, 141, 216, 146),
+    primarySwatch: Colors.teal,
+    scaffoldBackgroundColor: Colors.grey,
   );
 
   bool isDarkMode = false;
@@ -47,7 +46,7 @@ class _TicTacToeAppState extends State<TicTacToeApp> {
         '/game-room-selection': (context) => GameRoomSelectionScreen(),
         '/history': (context) => HistoryScreen(),
         '/how-to-play': (context) => HowToPlayScreen(),
-        '/settings': (context) => SettingsScreen(),
+        '/settings': (context) => SettingsScreen(toggleTheme: toggleTheme),
       },
     );
   }
@@ -57,6 +56,14 @@ class _TicTacToeAppState extends State<TicTacToeApp> {
     setState(() {
       isDarkMode = prefs.getBool('isDarkMode') ?? false;
     });
+  }
+
+  Future<void> toggleTheme(bool value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isDarkMode = value;
+    });
+    await prefs.setBool('isDarkMode', value);
   }
 
   @override

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
 import 'gameplay_screen.dart';
+import 'fixed_size_button.dart';
 
 class GameRoomSelectionScreen extends StatefulWidget {
   @override
@@ -83,20 +84,23 @@ class GameRoomSelectionScreenState extends State<GameRoomSelectionScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ElevatedButton(
+            FixedSizeButton(
               onPressed: () async {
                 await _createGameRoom(context);
               },
               child: Text('Create Game Room'),
             ),
             SizedBox(height: 20),
-            TextField(
-              controller: _roomIDController,
-              decoration: InputDecoration(
-                labelText: 'Enter Room Number',
+            Container(
+              width: 200,
+              child: TextField(
+                controller: _roomIDController,
+                decoration: InputDecoration(
+                  labelText: 'Enter Room Number',
+                ),
               ),
             ),
-            ElevatedButton(
+            FixedSizeButton(
               onPressed: _joinGameRoomButtonPressed,
               child: Text('Join Game Room'),
             ),
